@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>fullPage.js 데모</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/fullPage.js/4.0.20/fullpage.min.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', 'Malgun Gothic', sans-serif; }
+
+    /* 섹션은 레이아웃만, 색과 내용은 panel이 담당 */
+    .section { display: flex; }
+    .panel {
+      flex: 1;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      color: #fff;
+    }
+    .panel h1 { font-size: 4rem; margin-bottom: 1rem; }
+    .panel p  { font-size: 1.3rem; opacity: 0.85; }
+
+    .p1 { background: #ff6b6b; }
+    .p2 { background: #feca57; color: #333; }
+    .p3 { background: #1dd1a1; }
+    .p4 { background: #54a0ff; }
+    .p5 { background: #5f27cd; }
+
+    #fp-nav ul li a span { background: #fff; }
+  </style>
+</head>
+<body>
+  <div id="fullpage">
+    <div class="section" data-key="s1" data-tooltip="One">
+      <div class="panel p1"><h1>Section 1</h1><p>스크롤하거나 방향키를 눌러보세요 ↓</p></div>
+    </div>
+    <div class="section" data-key="s2" data-tooltip="Two">
+      <div class="panel p2"><h1>Section 2</h1><p>두 번째 섹션입니다</p></div>
+    </div>
+    <div class="section" data-key="s3" data-tooltip="Three">
+      <div class="panel p3"><h1>Section 3</h1><p>세 번째 섹션입니다</p></div>
+    </div>
+    <div class="section" data-key="s4" data-tooltip="Four">
+      <div class="panel p4"><h1>Section 4</h1><p>네 번째 섹션입니다</p></div>
+    </div>
+    <div class="section" data-key="s5" data-tooltip="Five">
+      <div class="panel p5"><h1>Section 5</h1><p>마지막 섹션입니다</p></div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/fullPage.js/4.0.20/fullpage.min.js"></script>
+  <script>
+    (function () {
+      var mq = window.matchMedia('(min-width: 1440px)');
+      var container = document.getElementById('fullpage');
+      var s1 = container.querySelector('[data-key="s1"]');
+      var s2 = container.querySelector('[data-key="s2"]');
+      var p2 = s2.querySelector('.panel');
+
+      // 1440 이상: 섹션2의 패널을 섹션1로 옮기고 섹션2는 DOM에서 뗀다
+      // 1440 미만: 원래 구조로 되돌린다
+      function applyLayout(merged) {
+        if (merged) {
+          s1.appendChild(p2);
+          s2.remove();
+        } else {
+          s2.appendChild(p2);
+          s1.after(s2);
+        }
+      }
+
+      function init(startAnchor) {
+        var sections = container.querySelectorAll(':scope > .section');
+        new fullpage('#fullpage', {
+          licenseKey: 'gplv3-license',
+          navigation: true,
+          navigationPosition: 'right',
+          anchors: Array.from(sections, function (s) { return s.dataset.key; }),
+          navigationTooltips: Array.from(sections, function (s) { return s.dataset.tooltip; }),
+          verticalCentered: false,
+          scrollOverflow: false,
+          scrollingSpeed: 700,
+          keyboardScrolling: true,
+          afterRender: function () {
+            if (startAnchor) fullpage_api.silentMoveTo(startAnchor);
+          }
+        });
+      }
+
+      // 합쳐진 상태에선 s2가 없으므로 s1로 대체
+      function resolveAnchor(anchor, merged) {
+        return merged && anchor === 's2' ? 's1' : anchor;
+      }
+
+      function rebuild(merged) {
+        var active = fullpage_api.getActiveSection();
+        var anchor = active ? active.anchor : null;
+        fullpage_api.destroy('all');
+        applyLayout(merged);
+        var target = resolveAnchor(anchor, merged);
+        if (target && target !== anchor) history.replaceState(null, '', '#' + target);
+        init(target);
+      }
+
+      // 최초 로드
+      var initialHash = location.hash.slice(1);
+      if (mq.matches) {
+        applyLayout(true);
+        if (initialHash === 's2') history.replaceState(null, '', '#s1');
+      }
+      init();
+
+      // 1440 경계를 넘을 때만 한 번씩 호출됨 (resize마다 호출 X)
+      mq.addEventListener('change', function (e) { rebuild(e.matches); });
+    })();
+  </script>
+</body>
+</html>
